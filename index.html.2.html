@@ -1,0 +1,185 @@
+<!doctype html>
+<html lang="de">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Pixel Quest – Jump & Run</title>
+<style>
+  :root{--ink:#172033;--panel:#202b48;--gold:#ffd166;--mint:#80edc2;--pink:#ff6b8a}
+  *{box-sizing:border-box}
+  body{margin:0;min-height:100vh;background:linear-gradient(#101a35,#25365c);color:#fff;font-family:system-ui,Arial,sans-serif;display:grid;place-items:center;padding:18px}
+  .wrap{width:min(960px,100%)}
+  header{display:flex;justify-content:space-between;align-items:center;gap:12px;flex-wrap:wrap;margin-bottom:12px}
+  h1{margin:0;font-size:clamp(24px,4vw,38px);letter-spacing:1px;text-shadow:3px 3px #563b85}
+  .stats{display:flex;gap:10px;flex-wrap:wrap}
+  .pill{background:#ffffff18;border:2px solid #ffffff28;border-radius:12px;padding:8px 12px;font-weight:800}
+  .stage{position:relative;border:4px solid #9eb6ff;border-radius:16px;overflow:hidden;box-shadow:0 16px 50px #0008;background:#8bd5ff}
+  canvas{display:block;width:100%;height:auto;image-rendering:pixelated;touch-action:pan-y}
+  .overlay{position:absolute;inset:0;display:grid;place-items:center;background:#10172dcc;padding:18px;text-align:center}
+  .panel{width:min(520px,100%);background:#202b48f2;border:3px solid #9eb6ff;border-radius:18px;padding:22px;box-shadow:0 10px 0 #10172d}
+  .panel h2{font-size:clamp(25px,5vw,38px);margin:0 0 8px;color:var(--gold)}
+  .panel p{line-height:1.5;color:#e3e9ff}
+  button{border:0;border-radius:12px;padding:12px 18px;font-weight:900;font-size:16px;cursor:pointer;background:var(--gold);color:#25213b;box-shadow:0 4px 0 #bd8535}
+  button:active{transform:translateY(3px);box-shadow:0 1px 0 #bd8535}
+  button.secondary{background:#b8c8ff;box-shadow:0 4px 0 #667ab7}
+  button.premium{background:linear-gradient(135deg,#fff0a6,#ffbd4a);box-shadow:0 4px 0 #b87924}
+  .actions{display:flex;gap:10px;justify-content:center;flex-wrap:wrap;margin-top:14px}
+  .small{font-size:12px;color:#bfcaf0}
+  .hidden{display:none!important}
+  .below{display:flex;justify-content:space-between;gap:12px;flex-wrap:wrap;align-items:center;margin-top:12px;color:#dbe4ff}
+  .mobile{display:flex;gap:12px;justify-content:center;margin-top:12px}
+  .mobile button{width:74px;height:54px;font-size:22px;touch-action:none}
+  .premium-card{margin-top:16px;border:2px solid #f5c85b;border-radius:14px;padding:12px;background:#ffffff0c}
+  .premium-card strong{color:#ffe18b}
+  @media(min-width:760px){.mobile{display:none}}
+</style>
+</head>
+<body>
+<div class="wrap">
+  <header>
+    <h1>⭐ PIXEL QUEST</h1>
+    <div class="stats">
+      <div class="pill">Punkte: <span id="score">0</span></div>
+      <div class="pill">Bestwert: <span id="best">0</span></div>
+      <div class="pill">Leben: <span id="lives">3</span> ❤️</div>
+    </div>
+  </header>
+
+  <div class="stage">
+    <canvas id="game" width="800" height="450" aria-label="Pixel Quest Jump and Run"></canvas>
+    <div class="overlay" id="menu">
+      <div class="panel">
+        <h2>PIXEL QUEST</h2>
+        <p>Springe über Hindernisse, sammle Münzen und knacke deinen Highscore!</p>
+        <p><b>Steuerung:</b> ← → oder A/D bewegen · Leertaste / ↑ / W springen</p>
+        <div class="actions">
+          <button id="start">Spiel starten</button>
+          <button class="secondary" id="sound">🔊 Sound an</button>
+        </div>
+        <div class="premium-card">
+          <strong>👑 PIXEL QUEST PREMIUM</strong>
+          <p>Goldener Held, exklusiver Premium-Look und ein besonderes Namensschild.</p>
+          <p><b>Einmalig 499,00 €</b></p>
+          <button class="premium" id="premium">Premium ansehen – 499 €</button>
+          <p class="small">Hinweis: Der echte Bezahlvorgang ist noch nicht eingerichtet. Beim Klick wird nichts berechnet.</p>
+        </div>
+      </div>
+    </div>
+    <div class="overlay hidden" id="gameover">
+      <div class="panel">
+        <h2>GAME OVER</h2>
+        <p>Dein Ergebnis: <b id="finalscore">0</b> Punkte</p>
+        <p id="bestmessage">Versuch es noch einmal!</p>
+        <div class="actions"><button id="restart">Nochmal spielen</button><button class="secondary" id="back">Hauptmenü</button></div>
+      </div>
+    </div>
+    <div class="overlay hidden" id="premiumModal">
+      <div class="panel">
+        <h2>👑 PREMIUM</h2>
+        <p>Premium kostet <b>499,00 € einmalig</b>.</p>
+        <p>Dein Spiel enthält derzeit noch keinen sicheren Zahlungsanbieter. Deshalb kann hier noch kein echter Kauf durchgeführt werden.</p>
+        <div class="actions"><button id="closePremium">Zurück</button></div>
+      </div>
+    </div>
+  </div>
+  <div class="mobile">
+    <button id="left" aria-label="Nach links">◀</button>
+    <button id="jump" aria-label="Springen">⬆</button>
+    <button id="right" aria-label="Nach rechts">▶</button>
+  </div>
+  <div class="below">
+    <span>💡 Tipp: Sammle Münzen und weiche den roten Slimes aus.</span>
+    <span class="small">Pixel Quest · Läuft direkt im Browser</span>
+  </div>
+</div>
+<script>
+(() => {
+  const canvas=document.getElementById('game'),ctx=canvas.getContext('2d');
+  const $=id=>document.getElementById(id);
+  const W=canvas.width,H=canvas.height,ground=382;
+  let running=false,score=0,lives=3,frame=0,speed=4,obstacles=[],coins=[],particles=[];
+  let soundOn=true,audio=null,keys={},best=Number(localStorage.getItem('pixelQuestBest')||0);
+  $('best').textContent=best;
+  const player={x:105,y:ground-42,w:32,h:42,vy:0,onGround:true,invuln:0};
+  function beep(freq=440,duration=.08,type='square'){
+    if(!soundOn)return;
+    try{audio=audio||new(window.AudioContext||window.webkitAudioContext)();const o=audio.createOscillator(),g=audio.createGain();o.type=type;o.frequency.value=freq;g.gain.value=.045;o.connect(g);g.connect(audio.destination);o.start();g.gain.exponentialRampToValueAtTime(.001,audio.currentTime+duration);o.stop(audio.currentTime+duration)}catch(e){}
+  }
+  function reset(){
+    score=0;lives=3;frame=0;speed=4;obstacles=[];coins=[];particles=[];
+    player.x=105;player.y=ground-player.h;player.vy=0;player.onGround=true;player.invuln=0;
+    updateHud();$('gameover').classList.add('hidden');$('menu').classList.add('hidden');running=true;
+  }
+  function updateHud(){$('score').textContent=score;$('lives').textContent=lives;$('best').textContent=best}
+  function jump(){if(running&&player.onGround){player.vy=-12.8;player.onGround=false;beep(620,.09)}}
+  function spawn(){
+    if(frame%Math.max(52,Math.floor(100-speed*5))===0)obstacles.push({x:W+20,w:25+Math.random()*17,h:25+Math.random()*25});
+    if(frame%95===0)coins.push({x:W+20,y:245+Math.random()*75,r:10});
+  }
+  function rect(x,y,w,h,color){ctx.fillStyle=color;ctx.fillRect(Math.round(x),Math.round(y),Math.round(w),Math.round(h))}
+  function drawBackground(){
+    rect(0,0,W,H,'#8bd5ff');
+    // distant pixel hills
+    for(let i=0;i<8;i++){let x=i*125-(frame*.35%125);rect(x,270,90,112,'#76c58c');rect(x+20,240,55,30,'#76c58c')}
+    // clouds
+    for(let i=0;i<5;i++){let x=(i*190-frame*.55%(W+180)+W+180)%(W+180)-70,y=55+(i%3)*42;rect(x,y,54,15,'#f4fbff');rect(x+13,y-10,30,15,'#f4fbff')}
+    rect(0,ground,W,H-ground,'#4eaa62');rect(0,ground,W,9,'#287b4a');
+    for(let x=-(frame*speed%40);x<W;x+=40){rect(x,ground+20,18,5,'#388b51');rect(x+20,ground+48,12,5,'#388b51')}
+  }
+  function drawPlayer(){
+    const x=player.x,y=player.y;
+    if(player.invuln>0&&Math.floor(frame/4)%2===0)return;
+    // pixel hero
+    rect(x+8,y,17,12,'#f3c39b');rect(x+5,y-3,21,8,'#603b83');rect(x+3,y+10,25,19,'#3977db');
+    rect(x+7,y+16,5,5,'#fff');rect(x+20,y+16,5,5,'#fff');rect(x+9,y+17,2,3,'#172033');rect(x+22,y+17,2,3,'#172033');
+    rect(x+7,y+29,8,11,'#46345f');rect(x+19,y+29,8,11,'#46345f');
+    rect(x+1,y+13,5,14,'#f3c39b');rect(x+27,y+13,5,14,'#f3c39b');
+  }
+  function draw(){
+    drawBackground();
+    // floating platforms
+    rect(330,310,82,9,'#9a6a42');rect(330,306,82,4,'#d59b58');
+    obstacles.forEach(o=>{rect(o.x,ground-o.h,o.w,o.h,'#e84d68');rect(o.x+5,ground-o.h+7,6,6,'#fff');rect(o.x+o.w-11,ground-o.h+7,6,6,'#fff');rect(o.x+7,ground-7,o.w-14,7,'#a92e4d')});
+    coins.forEach(c=>{rect(c.x-5,c.y-9,10,18,'#f7b928');rect(c.x-2,c.y-6,4,12,'#fff0a6')});
+    particles.forEach(p=>rect(p.x,p.y,4,4,p.color));
+    drawPlayer();
+  }
+  function endGame(){
+    running=false;$('finalscore').textContent=score;
+    const newBest=score>best;if(newBest){best=score;localStorage.setItem('pixelQuestBest',best)}
+    $('bestmessage').textContent=newBest?'Neuer Rekord! 🏆':'Dein Bestwert: '+best;
+    updateHud();$('gameover').classList.remove('hidden');beep(150,.35,'sawtooth');
+  }
+  function tick(){
+    if(!running)return;
+    frame++;score+=1;if(frame%500===0)speed=Math.min(8,speed+.45);
+    if(player.invuln>0)player.invuln--;
+    player.vy+=.58;player.y+=player.vy;
+    if(player.y+player.h>=ground){player.y=ground-player.h;player.vy=0;player.onGround=true}
+    if(keys.ArrowLeft||keys.a)player.x=Math.max(10,player.x-4);
+    if(keys.ArrowRight||keys.d)player.x=Math.min(W-player.w-10,player.x+4);
+    spawn();
+    obstacles.forEach(o=>o.x-=speed);coins.forEach(c=>c.x-=speed);
+    obstacles=obstacles.filter(o=>o.x+o.w>0);coins=coins.filter(c=>c.x+12>0);
+    for(let i=obstacles.length-1;i>=0;i--){const o=obstacles[i];if(player.x+player.w-5>o.x&&player.x+5<o.x+o.w&&player.y+player.h>ground-o.h+4){
+      if(player.invuln===0){lives--;player.invuln=75;updateHud();beep(110,.18,'sawtooth');if(lives<=0){endGame();return}}
+    }}
+    for(let i=coins.length-1;i>=0;i--){const c=coins[i];if(player.x+player.w>c.x-10&&player.x<c.x+10&&player.y+player.h>c.y-10&&player.y<c.y+10){coins.splice(i,1);score+=50;particles.push({x:c.x,y:c.y,color:'#ffe17a',life:20});beep(880,.08,'triangle')}}
+    particles.forEach(p=>{p.y-=1;p.life--});particles=particles.filter(p=>p.life>0);
+    updateHud();draw();requestAnimationFrame(tick);
+  }
+  function start(){reset();draw();requestAnimationFrame(tick);beep(520,.1)}
+  $('start').addEventListener('click',start);$('restart').addEventListener('click',start);
+  $('back').addEventListener('click',()=>{$('gameover').classList.add('hidden');$('menu').classList.remove('hidden');draw()});
+  $('sound').addEventListener('click',()=>{soundOn=!soundOn;$('sound').textContent=soundOn?'🔊 Sound an':'🔇 Sound aus';if(soundOn)beep()});
+  $('premium').addEventListener('click',()=>$('premiumModal').classList.remove('hidden'));
+  $('closePremium').addEventListener('click',()=>$('premiumModal').classList.add('hidden'));
+  window.addEventListener('keydown',e=>{keys[e.key]=true;if([' ','ArrowUp','w','W'].includes(e.key)){e.preventDefault();jump()}});
+  window.addEventListener('keyup',e=>keys[e.key]=false);
+  function hold(id,key){const b=$(id);b.addEventListener('pointerdown',e=>{e.preventDefault();keys[key]=true;if(key==='jump')jump()});['pointerup','pointerleave','pointercancel'].forEach(ev=>b.addEventListener(ev,()=>keys[key]=false))}
+  hold('left','ArrowLeft');hold('right','ArrowRight');hold('jump','jump');
+  draw();
+})();
+</script>
+</body>
+</html>
